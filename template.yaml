@@ -1,0 +1,41 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  data-ingest
+
+  Data Ingest workflow
+
+Globals:
+  Function:
+    MemorySize: 256
+    Runtime: python3.8
+    Tags:
+      - Key: owner
+        Value: wizeline
+    Timeout: 10
+    Tracing: Active
+
+Resources:
+  DataIngestStateMachine:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      DefinitionUri: statemachine/ingest.asl.json
+      DefinitionSubstitutions:
+        DataTriggerFunctionArn: !GetAtt DataTriggerFunction.Arn
+      Policies:
+        - LambdaInvokePolicy:
+            FunctionName: !Ref DataTriggerFunction
+      Tags:
+        - Key: owner
+          Value: wizeline
+
+  DataTriggerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/trigger/
+      Handler: app.lambda_handler
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - AWSXrayWriteOnlyAccess
+        - S3ReadPolicy:
+            bucketName: fdss3-620385424378-app-data-us-east-1
